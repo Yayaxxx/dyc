@@ -1,4 +1,4 @@
-/* main.js — version modulaire (ESM) pour Firebase 12.2.1 via CDN
+/* main.js — ESM modulaire (Firebase 12.2.1 via CDN)
  * - Inventaire PARTAGÉ : lecture globale via collectionGroup('items')
  * - Création sous users/{currentUser}/items
  * - Catégories stockées par utilisateur (users/{uid}.categories)
@@ -17,11 +17,8 @@ import {
   setDoc, addDoc, deleteDoc, updateDoc, getDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-/* -------------------------------------------------------------------------- */
-/* Config & init Firebase (sécurisé contre double init)                       */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------- Firebase init ----------------------------- */
 
-// ⚠️ Doit correspondre à index.html
 const firebaseConfig = {
   apiKey: "AIzaSyBSSRR5TtClk-mz_zP1eQAm7NRKZJ_GHfA",
   authDomain: "inventaire-dyc.firebaseapp.com",
@@ -35,9 +32,7 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-/* -------------------------------------------------------------------------- */
-/* Données & état                                                             */
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- État ----------------------------------- */
 
 const DEFAULT_CATEGORIES = [
   "Visseuses",
@@ -56,21 +51,15 @@ let currentTab = "chantier";
 let currentUser = null;
 let inventory = [];
 let unsubscribeInventory = null;
-let editingItemPath = null; // ex: "users/<uid>/items/<docId>"
+let editingItemPath = null; // "users/<uid>/items/<docId>"
 
-/* -------------------------------------------------------------------------- */
-/* Helpers                                                                    */
-/* -------------------------------------------------------------------------- */
+/* -------------------------------- Helpers --------------------------------- */
 
 function on(id, evt, handler) {
   const el = document.getElementById(id);
   if (el) el.addEventListener(evt, handler);
 }
-
-function $(selector) {
-  return document.querySelector(selector);
-}
-
+function $(selector) { return document.querySelector(selector); }
 function escapeHtml(str) {
   return String(str)
     .replaceAll("&", "&amp;")
@@ -79,15 +68,9 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+function docFromPath(path) { return doc(db, ...path.split("/")); }
 
-function docFromPath(path) {
-  // Transforme "users/uid/items/abc" en doc(db, 'users','uid','items','abc')
-  return doc(db, ...path.split("/"));
-}
-
-/* -------------------------------------------------------------------------- */
-/* Catégories (par utilisateur)                                               */
-/* -------------------------------------------------------------------------- */
+/* --------------------------- Catégories (par user) ------------------------- */
 
 async function loadCategoriesFromFirestore() {
   if (!currentUser) return;
@@ -111,7 +94,6 @@ async function loadCategoriesFromFirestore() {
     categories = [...DEFAULT_CATEGORIES];
   }
 }
-
 async function saveCategoriesToFirestore() {
   if (!currentUser) return;
   try {
@@ -121,36 +103,26 @@ async function saveCategoriesToFirestore() {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Inventaire partagé (tous les users) — écoute en temps réel                 */
-/* -------------------------------------------------------------------------- */
+/* ----------------------------- Inventaire partagé -------------------------- */
 
 function subscribeToInventory() {
-  if (typeof unsubscribeInventory === "function") {
-    unsubscribeInventory();
-    unsubscribeInventory = null;
-  }
+  if (typeof unsubscribeInventory === "function") { unsubscribeInventory(); unsubscribeInventory = null; }
   unsubscribeInventory = onSnapshot(
     collectionGroup(db, "items"),
     (snapshot) => {
-      const items = [];
-      snapshot.forEach((d) => items.push({ id: d.id, path: d.ref.path, ...d.data() }));
-      inventory = items;
+      inventory = snapshot.docs.map(d => ({ id: d.id, path: d.ref.path, ...d.data() }));
       renderInventory();
     },
     (error) => console.error("Erreur sync inventaire :", error)
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Auth                                                                       */
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- Auth ----------------------------------- */
 
 async function registerUser() {
   const email = (document.getElementById("register-email")?.value || "").trim();
   const password = document.getElementById("register-password")?.value || "";
   if (!email || !password) { alert("Saisis un email et un mot de passe."); return; }
-
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     currentUser = cred.user.uid;
@@ -168,12 +140,10 @@ async function registerUser() {
     alert("Erreur création compte : " + error.message);
   }
 }
-
 async function loginUser() {
   const email = (document.getElementById("login-email")?.value || "").trim();
   const password = document.getElementById("login-password")?.value || "";
   if (!email || !password) { alert("Saisis un email et un mot de passe."); return; }
-
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     currentUser = cred.user.uid;
@@ -188,7 +158,6 @@ async function loginUser() {
     alert("Erreur connexion : " + error.message);
   }
 }
-
 async function logoutUser() {
   try { await signOut(auth); } catch (e) { console.error(e); }
   currentUser = null;
@@ -198,9 +167,7 @@ async function logoutUser() {
   showAuth();
 }
 
-/* -------------------------------------------------------------------------- */
-/* UI show/hide                                                               */
-/* -------------------------------------------------------------------------- */
+/* ---------------------------- UI show/hide -------------------------------- */
 
 function showLoginForm() {
   const login = document.getElementById("login-section");
@@ -208,21 +175,18 @@ function showLoginForm() {
   if (login) login.style.display = "block";
   if (register) register.style.display = "none";
 }
-
 function showRegisterForm() {
   const login = document.getElementById("login-section");
   const register = document.getElementById("register-section");
   if (login) login.style.display = "none";
   if (register) register.style.display = "block";
 }
-
 function showAuth() {
   const authEl = document.getElementById("auth");
   const appEl = document.getElementById("app-section");
   if (authEl) authEl.style.display = "block";
   if (appEl) appEl.style.display = "none";
 }
-
 function showApp() {
   const authEl = document.getElementById("auth");
   const appEl = document.getElementById("app-section");
@@ -233,16 +197,14 @@ function showApp() {
   setActiveTab(currentTab);
 }
 
-/* -------------------------------------------------------------------------- */
-/* Rendu inventaire                                                           */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ Rendu table -------------------------------- */
 
 function renderInventory() {
   const tbody = $("#inventory-table tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  // Mémoriser/restaurer chef sélectionné
+  // Chef sélectionné
   const chefSelectElement = document.getElementById("chef-select");
   const preservedChef = chefSelectElement ? chefSelectElement.value : "All";
   populateChefs();
@@ -284,9 +246,7 @@ function renderInventory() {
   if (emptyMsg) emptyMsg.style.display = visibleCount ? "none" : "block";
 }
 
-/* -------------------------------------------------------------------------- */
-/* Modale Article                                                             */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ Modale Article ----------------------------- */
 
 function openItemModal(itemPath = null) {
   const modal = document.getElementById("item-modal");
@@ -329,13 +289,11 @@ function openItemModal(itemPath = null) {
   const saveBtn = document.getElementById("save-item-button");
   if (saveBtn) saveBtn.onclick = () => saveItem();
 }
-
 function closeItemModal() {
   const modal = document.getElementById("item-modal");
   if (modal) modal.style.display = "none";
   editingItemPath = null;
 }
-
 async function saveItem() {
   const name = (document.getElementById("item-name")?.value || "").trim();
   const category = document.getElementById("item-category-select")?.value || "";
@@ -359,13 +317,11 @@ async function saveItem() {
       await addDoc(collection(db, "users", currentUser, "items"), itemData);
     }
     closeItemModal();
-    // onSnapshot mettra la liste à jour automatiquement
   } catch (err) {
     console.error("Erreur enregistrement article :", err);
     alert("Impossible d’enregistrer l’article.");
   }
 }
-
 async function deleteItem(itemPath) {
   if (!itemPath) return;
   if (!confirm("Supprimer cet article ?")) return;
@@ -377,9 +333,7 @@ async function deleteItem(itemPath) {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Export CSV                                                                 */
-/* -------------------------------------------------------------------------- */
+/* -------------------------------- Export CSV ------------------------------- */
 
 function exportCSV() {
   if (!inventory.length) { alert("Aucun article à exporter."); return; }
@@ -413,9 +367,7 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-/* -------------------------------------------------------------------------- */
-/* Selects Catégories / Chefs                                                 */
-/* -------------------------------------------------------------------------- */
+/* -------------------------- Selects Catégories/Chefs ----------------------- */
 
 function populateCategories() {
   const catSelect = document.getElementById("category-select");
@@ -446,7 +398,6 @@ function populateCategories() {
     }
   });
 }
-
 function populateChefs() {
   const chefSelect = document.getElementById("chef-select");
   if (!chefSelect) return;
@@ -471,9 +422,7 @@ function populateChefs() {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Gestion des catégories                                                     */
-/* -------------------------------------------------------------------------- */
+/* ---------------------------- Gestion catégories --------------------------- */
 
 function openCategoryModal() {
   const modal = document.getElementById("category-modal");
@@ -481,12 +430,10 @@ function openCategoryModal() {
   modal.style.display = "flex";
   renderCategoryList();
 }
-
 function closeCategoryModal() {
   const modal = document.getElementById("category-modal");
   if (modal) modal.style.display = "none";
 }
-
 function renderCategoryList() {
   const list = document.getElementById("category-list");
   if (!list) return;
@@ -513,7 +460,6 @@ function renderCategoryList() {
     list.appendChild(li);
   });
 }
-
 function addCategory() {
   const newNameInput = document.getElementById("new-category-name");
   const name = (newNameInput?.value || "").trim();
@@ -525,7 +471,6 @@ function addCategory() {
   renderCategoryList();
   if (newNameInput) newNameInput.value = "";
 }
-
 function renameCategory(index) {
   const oldName = categories[index];
   const newName = prompt("Nouveau nom de catégorie :", oldName);
@@ -533,7 +478,7 @@ function renameCategory(index) {
   if (categories.includes(newName)) { alert("Ce nom existe déjà."); return; }
   categories[index] = newName;
 
-  // Mettre à jour les articles du user courant (facultatif)
+  // Mettre à jour tes propres articles (facultatif)
   if (currentUser) {
     inventory.forEach(item => {
       if (item.category === oldName && item.path?.startsWith(`users/${currentUser}/items/`)) {
@@ -547,7 +492,6 @@ function renameCategory(index) {
   populateCategories();
   renderCategoryList();
 }
-
 function deleteCategory(index) {
   const name = categories[index];
   const used = inventory.some(item => item.category === name && item.path?.startsWith(`users/${currentUser}/items/`));
@@ -560,9 +504,7 @@ function deleteCategory(index) {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Tabs                                                                       */
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- Tabs ----------------------------------- */
 
 function setActiveTab(tab) {
   const chantierBtn = document.getElementById("tab-chantier");
@@ -573,9 +515,7 @@ function setActiveTab(tab) {
   if (tab === "atelier" && atelierBtn) atelierBtn.classList.add("active");
 }
 
-/* -------------------------------------------------------------------------- */
-/* Service worker (PWA) — à condition d’ignorer Firebase côté SW              */
-/* -------------------------------------------------------------------------- */
+/* ----------------------------- Service worker ------------------------------ */
 
 function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
@@ -586,9 +526,7 @@ function registerServiceWorker() {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Événements                                                                 */
-/* -------------------------------------------------------------------------- */
+/* -------------------------------- Événements ------------------------------- */
 
 function setupEventListeners() {
   on("login-button", "click", loginUser);
@@ -615,7 +553,7 @@ function setupEventListeners() {
   on("close-category-button",    "click", closeCategoryModal);
   on("add-category-button",      "click", addCategory);
 
-  // Délégation clics tableau
+  // Délégation sur le tableau
   const tbody = $("#inventory-table tbody");
   if (tbody) {
     tbody.addEventListener("click", (e) => {
@@ -629,9 +567,7 @@ function setupEventListeners() {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Init — auto via onAuthStateChanged                                         */
-/* -------------------------------------------------------------------------- */
+/* ---------------------------------- Init ---------------------------------- */
 
 function init() {
   registerServiceWorker();
