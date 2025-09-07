@@ -120,6 +120,26 @@
       </div>
     </div>
   </div>
+  <!-- Firebase SDKs (version 10.x) -->
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-firestore.js"></script>
+
+  <!-- Firebase configuration (replace placeholder values with your own credentials) -->
+  <script>
+    // Replace the following configuration with your own Firebase project credentials.
+    // Never commit your real API keys to public repositories.
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSSRR5TtClk-mz_zP1eQAm7NRKZJ_GHfA",
+      authDomain: "inventaire-dyc.firebaseapp.com",
+      projectId: "inventaire-dyc",
+      storageBucket: "inventaire-dyc.appspot.com",
+      messagingSenderId: "BL9MOQ53iTdO-Od4wcuwtRemYCS67Y3wjplwvzT1GQ6fAXmcwxEkpzr7PsPUbNw5GcQxEYAnQtzbznIrRfrFa7I",
+      appId: "420658924755"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
   <!-- Main script -->
   <script src="main.js"></script>
 </body>
