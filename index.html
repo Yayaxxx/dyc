@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2a7ae2" />
   <title>Application d’inventaire</title>
-  <!-- Manifest PWA -->
   <link rel="manifest" href="manifest.json" />
-  <!-- CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -25,7 +23,7 @@
     </div>
 
     <!-- Inscription -->
-    <div id="register-section" style="display: none;">
+    <div id="register-section" style="display:none;">
       <h2>Créer un compte</h2>
       <input id="register-email" type="email" placeholder="Email" />
       <input id="register-password" type="password" placeholder="Mot de passe" />
@@ -34,8 +32,8 @@
     </div>
   </div>
 
-  <!-- App (cachée avant auth) -->
-  <div id="app-section" style="display: none;">
+  <!-- App -->
+  <div id="app-section" style="display:none;">
     <header>
       <h1 class="app-title">Gestion d’inventaire</h1>
       <button id="logout-button" class="secondary">Déconnexion</button>
@@ -84,13 +82,13 @@
       <tbody></tbody>
     </table>
 
-    <!-- Message liste vide (utilisé par main.js) -->
+    <!-- Message liste vide -->
     <div id="empty-message" style="display:none; padding:1rem; opacity:.8;">
       Aucun article pour les filtres/onglet actuels.
     </div>
 
     <!-- Modale article -->
-    <div id="item-modal" class="modal" style="display: none;">
+    <div id="item-modal" class="modal" style="display:none;">
       <div class="modal-content">
         <h2 id="modal-title">Nouvel article</h2>
         <input id="item-name" type="text" placeholder="Nom de l’article" />
@@ -111,7 +109,7 @@
     </div>
 
     <!-- Modale catégories -->
-    <div id="category-modal" class="modal" style="display: none;">
+    <div id="category-modal" class="modal" style="display:none;">
       <div class="modal-content">
         <h2>Gestion des catégories</h2>
         <ul id="category-list" class="category-list"></ul>
@@ -126,26 +124,25 @@
     </div>
   </div>
 
-  <!-- Firebase SDK (compat pour matcher main.js) -->
+  <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-firestore-compat.js"></script>
 
-  <!-- Init Firebase (remplace les valeurs si besoin) -->
+  <!-- Init Firebase -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBSSRR5TtClk-mz_zP1eQAm7NRKZJ_GHfA",
       authDomain: "inventaire-dyc.firebaseapp.com",
       projectId: "inventaire-dyc",
-      storageBucket: "inventaire-dyc.appspot.com",  // corrigé: *.appspot.com
+      storageBucket: "inventaire-dyc.appspot.com",
       messagingSenderId: "420658924755",
-      appId: "1:420658924755:web:a88e09d6ccfe8aac2d9826",
-      // measurementId inutile si tu n'actives pas Analytics
+      appId: "1:420658924755:web:a88e09d6ccfe8aac2d9826"
     };
     firebase.initializeApp(firebaseConfig);
   </script>
 
-  <!-- Script app -->
+  <!-- App -->
   <script src="main.js"></script>
 </body>
 </html>
