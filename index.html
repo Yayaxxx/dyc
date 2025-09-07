@@ -128,16 +128,27 @@
   <!-- Firebase configuration (replace placeholder values with your own credentials) -->
   <script>
     
-    const firebaseConfig = {
-      apiKey: "AIzaSyBSSRR5TtClk-mz_zP1eQAm7NRKZJ_GHfA",
-      authDomain: "inventaire-dyc.firebaseapp.com",
-      projectId: "inventaire-dyc",
-      storageBucket: "inventaire-dyc.appspot.com",
-      messagingSenderId: "BL9MOQ53iTdO-Od4wcuwtRemYCS67Y3wjplwvzT1GQ6fAXmcwxEkpzr7PsPUbNw5GcQxEYAnQtzbznIrRfrFa7I",
-      appId: "420658924755"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
+    // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBSSRR5TtClk-mz_zP1eQAm7NRKZJ_GHfA",
+  authDomain: "inventaire-dyc.firebaseapp.com",
+  projectId: "inventaire-dyc",
+  storageBucket: "inventaire-dyc.firebasestorage.app",
+  messagingSenderId: "420658924755",
+  appId: "1:420658924755:web:a88e09d6ccfe8aac2d9826",
+  measurementId: "G-FFS8WPSWS8"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
   <!-- Main script -->
   <script src="main.js"></script>
