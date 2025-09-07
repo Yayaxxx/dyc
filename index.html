@@ -5,16 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2a7ae2" />
   <title>Application d’inventaire</title>
-  <!-- Manifest for PWA support -->
+  <!-- Manifest PWA -->
   <link rel="manifest" href="manifest.json" />
-  <!-- Main stylesheet -->
+  <!-- CSS -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Authentication section -->
+  <!-- Auth -->
   <div id="auth" class="container">
     <h1 class="app-title">Application d’inventaire</h1>
-    <!-- Login form -->
+
+    <!-- Connexion -->
     <div id="login-section">
       <h2>Se connecter</h2>
       <input id="login-email" type="email" placeholder="Email" />
@@ -22,7 +23,8 @@
       <button id="login-button" class="primary">Connexion</button>
       <p>Pas de compte ? <a href="#" id="show-register">Créer un compte</a></p>
     </div>
-    <!-- Registration form -->
+
+    <!-- Inscription -->
     <div id="register-section" style="display: none;">
       <h2>Créer un compte</h2>
       <input id="register-email" type="email" placeholder="Email" />
@@ -31,31 +33,30 @@
       <p>Déjà inscrit ? <a href="#" id="show-login">Se connecter</a></p>
     </div>
   </div>
-  <!-- Application section (hidden until authenticated) -->
+
+  <!-- App (cachée avant auth) -->
   <div id="app-section" style="display: none;">
     <header>
       <h1 class="app-title">Gestion d’inventaire</h1>
       <button id="logout-button" class="secondary">Déconnexion</button>
     </header>
-    <!-- Navigation tabs for different inventories and category management -->
+
+    <!-- Onglets -->
     <nav id="nav-tabs" class="tabs">
       <button id="tab-chantier" class="tab active">Inventaire chantier</button>
       <button id="tab-atelier" class="tab">Inventaire atelier</button>
       <button id="manage-categories-button" class="tab">Catégories</button>
     </nav>
 
+    <!-- Filtres + actions -->
     <section id="controls" class="controls">
       <div class="filter-group">
         <label for="category-select">Catégorie :</label>
-        <select id="category-select">
-          <!-- Categories will be populated dynamically -->
-        </select>
+        <select id="category-select"></select>
       </div>
       <div class="filter-group">
         <label for="chef-select">Chef d’équipe :</label>
-        <select id="chef-select">
-          <!-- Team leaders will be populated dynamically -->
-        </select>
+        <select id="chef-select"></select>
       </div>
       <div class="filter-group">
         <input id="search-input" type="text" placeholder="Rechercher…" />
@@ -65,7 +66,8 @@
         <button id="add-item-button" class="primary">Ajouter</button>
       </div>
     </section>
-    <!-- Inventory table -->
+
+    <!-- Tableau -->
     <table id="inventory-table">
       <thead>
         <tr>
@@ -81,16 +83,19 @@
       </thead>
       <tbody></tbody>
     </table>
-    <!-- Modal for adding/editing items -->
+
+    <!-- Message liste vide (utilisé par main.js) -->
+    <div id="empty-message" style="display:none; padding:1rem; opacity:.8;">
+      Aucun article pour les filtres/onglet actuels.
+    </div>
+
+    <!-- Modale article -->
     <div id="item-modal" class="modal" style="display: none;">
       <div class="modal-content">
         <h2 id="modal-title">Nouvel article</h2>
         <input id="item-name" type="text" placeholder="Nom de l’article" />
-        <select id="item-category-select">
-          <!-- Categories options inserted here -->
-        </select>
+        <select id="item-category-select"></select>
         <input id="item-quantity" type="number" min="0" placeholder="Quantité" />
-        <!-- New fields: date, chantier, location -->
         <input id="item-date" type="date" />
         <input id="item-site" type="text" placeholder="Nom du chantier" />
         <input id="item-chef" type="text" placeholder="Chef d’équipe" />
@@ -105,7 +110,7 @@
       </div>
     </div>
 
-    <!-- Modal for managing categories -->
+    <!-- Modale catégories -->
     <div id="category-modal" class="modal" style="display: none;">
       <div class="modal-content">
         <h2>Gestion des catégories</h2>
@@ -120,37 +125,27 @@
       </div>
     </div>
   </div>
-  <!-- Firebase SDKs (version 10.x) -->
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-firestore.js"></script>
 
-  <!-- Firebase configuration (replace placeholder values with your own credentials) -->
+  <!-- Firebase SDK (compat pour matcher main.js) -->
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-firestore-compat.js"></script>
+
+  <!-- Init Firebase (remplace les valeurs si besoin) -->
   <script>
-    
-    // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSSRR5TtClk-mz_zP1eQAm7NRKZJ_GHfA",
+      authDomain: "inventaire-dyc.firebaseapp.com",
+      projectId: "inventaire-dyc",
+      storageBucket: "inventaire-dyc.appspot.com",  // corrigé: *.appspot.com
+      messagingSenderId: "420658924755",
+      appId: "1:420658924755:web:a88e09d6ccfe8aac2d9826",
+      // measurementId inutile si tu n'actives pas Analytics
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBSSRR5TtClk-mz_zP1eQAm7NRKZJ_GHfA",
-  authDomain: "inventaire-dyc.firebaseapp.com",
-  projectId: "inventaire-dyc",
-  storageBucket: "inventaire-dyc.firebasestorage.app",
-  messagingSenderId: "420658924755",
-  appId: "1:420658924755:web:a88e09d6ccfe8aac2d9826",
-  measurementId: "G-FFS8WPSWS8"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-  <!-- Main script -->
+  <!-- Script app -->
   <script src="main.js"></script>
 </body>
 </html>
