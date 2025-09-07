@@ -124,48 +124,7 @@
     </div>
   </div>
 
-  <!-- Firebase Web SDK (modulaire via CDN ESM) -->
-  <script type="module">
-    // Import des SDK nécessaires
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-    // (Optionnel) Analytics – uniquement en prod HTTPS avec measurementId
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
-
-    // Config Firebase (storageBucket corrigé -> *.appspot.com)
-    const firebaseConfig = {
-      apiKey: "AIzaSyBSSRR5TtClk-mz_zP1eQAm7NRKZJ_GHfA",
-      authDomain: "inventaire-dyc.firebaseapp.com",
-      projectId: "inventaire-dyc",
-      storageBucket: "inventaire-dyc.appspot.com",
-      messagingSenderId: "420658924755",
-      appId: "1:420658924755:web:a88e09d6ccfe8aac2d9826",
-      measurementId: "G-FFS8WPSWS8"
-    };
-
-    // Initialisation
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
-
-    // Analytics (optionnel – ignore en local/file://)
-    try { getAnalytics(app); } catch (_) {}
-
-    // Exposer pour d'autres scripts non-ESM (si besoin)
-    window.app = app;
-    window.auth = auth;
-    window.db = db;
-
-    // Petit log santé (tu peux supprimer)
-    console.log('[Firebase] projectId=', app.options.projectId);
-  </script>
-
-  <!-- Ton script applicatif -->
-  <!-- Si ton main.js est MODULAIRE, charge-le aussi en type="module" -->
-  <!-- <script type="module" src="main.js"></script> -->
-
-  <!-- Si ton main.js n'est PAS modulaire mais lit window.auth/window.db, charge-le ainsi : -->
-  <script defer src="main.js"></script>
+  <!-- Charge l’app en ESM : l'init Firebase est dans main.js -->
+  <script type="module" src="main.js"></script>
 </body>
 </html>
