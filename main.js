@@ -23,6 +23,20 @@ const DEFAULT_CATEGORIES = [
   'Batteries usagées M/S/ST'
 ];
 
+/*
+ * Firebase integration
+ *
+ * The application is prepared for integration with Firebase. The following
+ * references are created from the globally‑loaded Firebase SDK. Replace the
+ * localStorage logic with calls to these objects when you wish to enable
+ * cross‑device synchronisation (for example, using Firestore for data
+ * persistence and Auth for user management). See README for guidance.
+ */
+const auth = typeof firebase !== 'undefined' ? firebase.auth() : null;
+const db   = typeof firebase !== 'undefined' ? firebase.firestore() : null;
+// TODO: After providing your Firebase configuration in index.html, you can
+// use `auth` and `db` to register, sign in users and store data in Firestore.
+
 // Dynamic state: list of categories for the current user and current tab
 let categories = [];
 let currentTab = 'chantier';
@@ -31,85 +45,170 @@ let currentTab = 'chantier';
 let currentUser = null;
 let inventory = [];
 
-/* Utility functions for localStorage persistence */
-function loadUsers() {
-  const users = localStorage.getItem('users');
-  return users ? JSON.parse(users) : {};
-}
+/* --------------------------------------------------------------------------
+ * Firebase persistence helpers
+ *
+ * The following helper functions replace the earlier localStorage‑based
+ * persistence. They interact with Firebase Auth and Firestore to create
+ * users, fetch and update categories, and keep the inventory in sync across
+ * devices. If you prefer to retain a localStorage fallback, you can
+ * incorporate the old functions; however, for cross‑device synchronisation
+ * Firestore is required. These functions assume that the Firebase SDK has
+ * already been initialised in index.html and that `auth` and `db` are
+ * defined as shown at the top of this file.
+ */
 
-function saveUsers(users) {
-  localStorage.setItem('users', JSON.stringify(users));
-}
+// Firestore real‑time subscription reference. When the user logs out the
+// listener will be unsubscribed to avoid memory leaks.
+let unsubscribeInventory = null;
 
-function loadInventoryForUser(email) {
-  const data = localStorage.getItem(`inventory_${email}`);
-  return data ? JSON.parse(data) : [];
-}
-
-function saveInventoryForUser(email, data) {
-  localStorage.setItem(`inventory_${email}`, JSON.stringify(data));
-}
-
-/* Category persistence functions */
-function loadCategoriesForUser(email) {
-  const data = localStorage.getItem(`categories_${email}`);
-  if (data) {
-    return JSON.parse(data);
+/**
+ * Load the category list for the currently authenticated user from Firestore.
+ * If no document exists yet, the default categories are used and persisted.
+ */
+async function loadCategoriesFromFirestore() {
+  if (!currentUser) return;
+  try {
+    const docRef = db.collection('users').doc(currentUser);
+    const docSnap = await docRef.get();
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      if (data && Array.isArray(data.categories)) {
+        categories = data.categories;
+      } else {
+        categories = [...DEFAULT_CATEGORIES];
+        await docRef.set({ categories }, { merge: true });
+      }
+    } else {
+      categories = [...DEFAULT_CATEGORIES];
+      await docRef.set({ categories });
+    }
+  } catch (err) {
+    console.error('Erreur de chargement des catégories depuis Firestore :', err);
+    // En cas d’erreur, retomber sur les catégories par défaut pour éviter une
+    // interface vide.
+    categories = [...DEFAULT_CATEGORIES];
   }
-  // If no categories saved yet, return default set
-  return [...DEFAULT_CATEGORIES];
 }
 
-function saveCategoriesForUser(email, data) {
-  localStorage.setItem(`categories_${email}`, JSON.stringify(data));
+/**
+ * Persist the current list of categories to Firestore for the active user.
+ */
+async function saveCategoriesToFirestore() {
+  if (!currentUser) return;
+  try {
+    await db.collection('users').doc(currentUser).set({ categories }, { merge: true });
+  } catch (err) {
+    console.error('Erreur lors de l’enregistrement des catégories :', err);
+  }
+}
+
+/**
+ * Subscribe to inventory changes for the current user. Any existing
+ * subscription is cancelled before a new one is created. When the
+ * inventory changes in Firestore, the local `inventory` array is updated
+ * and the table is re‑rendered. This provides real‑time synchronisation.
+ */
+function subscribeToInventory() {
+  if (!currentUser) return;
+  // Annuler l’abonnement précédent si présent
+  if (typeof unsubscribeInventory === 'function') {
+    unsubscribeInventory();
+  }
+  unsubscribeInventory = db
+    .collection('users')
+    .doc(currentUser)
+    .collection('items')
+    .onSnapshot(
+      (snapshot) => {
+        inventory = [];
+        snapshot.forEach((doc) => {
+          // doc.id correspond à l’identifiant Firestore, utile pour les mises à jour
+          inventory.push({ id: doc.id, ...doc.data() });
+        });
+        // Réafficher l’inventaire avec les nouvelles données
+        renderInventory();
+      },
+      (error) => {
+        console.error('Erreur de synchronisation de l’inventaire :', error);
+      }
+    );
 }
 
 /* Authentication functions */
-function registerUser() {
+async function registerUser() {
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value;
   if (!email || !password) {
     alert('Veuillez saisir un email et un mot de passe.');
     return;
   }
-  const users = loadUsers();
-  if (users[email]) {
-    alert('Un compte existe déjà avec cet email.');
+  if (!auth) {
+    alert('Firebase Auth n’est pas initialisé.');
     return;
   }
-  // In a real application, never store plain passwords! Use a proper auth
-  // provider such as Firebase Auth. Here we store the password as is for
-  // demonstration purposes.
-  users[email] = { password };
-  saveUsers(users);
-  alert('Compte créé avec succès. Vous pouvez maintenant vous connecter.');
-  // Clear inputs and switch back to login form
-  document.getElementById('register-email').value = '';
-  document.getElementById('register-password').value = '';
-  showLoginForm();
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    currentUser = cred.user.uid;
+    // Initialiser les catégories par défaut dans Firestore pour ce nouvel utilisateur
+    categories = [...DEFAULT_CATEGORIES];
+    await db.collection('users').doc(currentUser).set({ categories });
+    alert('Compte créé avec succès. Vous pouvez maintenant vous connecter.');
+    // Après inscription, déconnecter l’utilisateur automatiquement pour
+    // l’obliger à se reconnecter (évite de rester connecté en arrière‑plan)
+    await auth.signOut();
+    currentUser = null;
+    // Réinitialiser le formulaire
+    document.getElementById('register-email').value = '';
+    document.getElementById('register-password').value = '';
+    showLoginForm();
+  } catch (error) {
+    alert('Erreur lors de la création du compte : ' + error.message);
+  }
 }
 
-function loginUser() {
+async function loginUser() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  const users = loadUsers();
-  if (!users[email] || users[email].password !== password) {
-    alert('Email ou mot de passe incorrect.');
+  if (!email || !password) {
+    alert('Veuillez saisir un email et un mot de passe.');
     return;
   }
-  currentUser = email;
-  inventory = loadInventoryForUser(email);
-  categories = loadCategoriesForUser(email);
-  // Clear login inputs
-  document.getElementById('login-email').value = '';
-  document.getElementById('login-password').value = '';
-  showApp();
+  if (!auth) {
+    alert('Firebase Auth n’est pas initialisé.');
+    return;
+  }
+  try {
+    const cred = await auth.signInWithEmailAndPassword(email, password);
+    currentUser = cred.user.uid;
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    // Charger les catégories depuis Firestore
+    await loadCategoriesFromFirestore();
+    // S’abonner à l’inventaire en temps réel
+    subscribeToInventory();
+    showApp();
+  } catch (error) {
+    alert('Erreur lors de la connexion : ' + error.message);
+  }
 }
 
-function logoutUser() {
+async function logoutUser() {
+  try {
+    if (auth) {
+      await auth.signOut();
+    }
+  } catch (error) {
+    console.error('Erreur lors de la déconnexion :', error);
+  }
   currentUser = null;
   inventory = [];
   categories = [];
+  // Annuler l’abonnement Firestore si actif
+  if (typeof unsubscribeInventory === 'function') {
+    unsubscribeInventory();
+    unsubscribeInventory = null;
+  }
   showAuth();
 }
 
@@ -239,7 +338,7 @@ function closeItemModal() {
   document.getElementById('item-modal').style.display = 'none';
 }
 
-function saveItem(index) {
+async function saveItem(index) {
   const name = document.getElementById('item-name').value.trim();
   const category = document.getElementById('item-category-select').value;
   const quantity = parseInt(document.getElementById('item-quantity').value, 10);
@@ -255,23 +354,48 @@ function saveItem(index) {
     alert('Veuillez saisir une quantité valide.');
     return;
   }
-  if (index !== null && index >= 0) {
-    // Update existing item
-    inventory[index] = { name, category, quantity, date, site, chef, location };
-  } else {
-    // Add new item
-    inventory.push({ name, category, quantity, date, site, chef, location });
+  const itemData = { name, category, quantity, date, site, chef, location };
+  try {
+    if (index !== null && index >= 0) {
+      // Mise à jour d’un document existant dans Firestore
+      const itemId = inventory[index].id;
+      await db
+        .collection('users')
+        .doc(currentUser)
+        .collection('items')
+        .doc(itemId)
+        .set(itemData);
+    } else {
+      // Ajout d’un nouveau document dans Firestore
+      await db
+        .collection('users')
+        .doc(currentUser)
+        .collection('items')
+        .add(itemData);
+    }
+    closeItemModal();
+    // Pas besoin d’appeler renderInventory() ici : la souscription onSnapshot
+    // actualisera automatiquement la liste.
+  } catch (err) {
+    console.error('Erreur lors de l’enregistrement de l’article :', err);
+    alert('Impossible d’enregistrer l’article.');
   }
-  saveInventoryForUser(currentUser, inventory);
-  closeItemModal();
-  renderInventory();
 }
 
-function deleteItem(index) {
-  if (confirm('Supprimer cet article ?')) {
-    inventory.splice(index, 1);
-    saveInventoryForUser(currentUser, inventory);
-    renderInventory();
+async function deleteItem(index) {
+  if (!confirm('Supprimer cet article ?')) return;
+  try {
+    const itemId = inventory[index].id;
+    await db
+      .collection('users')
+      .doc(currentUser)
+      .collection('items')
+      .doc(itemId)
+      .delete();
+    // La suppression est reflétée automatiquement via l’abonnement onSnapshot
+  } catch (err) {
+    console.error('Erreur lors de la suppression de l’article :', err);
+    alert('Impossible de supprimer l’article.');
   }
 }
 
@@ -484,7 +608,8 @@ function addCategory() {
     return;
   }
   categories.push(name);
-  saveCategoriesForUser(currentUser, categories);
+  // Sauvegarder les catégories dans Firestore
+  saveCategoriesToFirestore();
   populateCategories();
   renderCategoryList();
   newNameInput.value = '';
@@ -502,17 +627,30 @@ function renameCategory(index) {
   }
   // Update category name
   categories[index] = newName;
-  // Update all items referencing this category
+  // Mettre à jour tous les articles ayant l’ancienne catégorie
   inventory.forEach(item => {
     if (item.category === oldName) {
+      // Mettre à jour la catégorie au niveau local ; la mise à jour
+      // effective s’effectuera via saveItem lors de l’édition de chaque article
       item.category = newName;
+      // Mettre à jour l’article dans Firestore
+      if (item.id) {
+        db
+          .collection('users')
+          .doc(currentUser)
+          .collection('items')
+          .doc(item.id)
+          .update({ category: newName })
+          .catch(err => console.error('Erreur lors de la mise à jour de la catégorie de l’article :', err));
+      }
     }
   });
-  saveCategoriesForUser(currentUser, categories);
-  saveInventoryForUser(currentUser, inventory);
+  // Sauvegarder la nouvelle liste de catégories
+  saveCategoriesToFirestore();
   populateCategories();
   renderCategoryList();
-  renderInventory();
+  // renderInventory sera déclenché par l’abonnement onSnapshot si des articles
+  // ont été modifiés
 }
 
 function deleteCategory(index) {
@@ -525,7 +663,8 @@ function deleteCategory(index) {
   }
   if (confirm('Supprimer la catégorie ?')) {
     categories.splice(index, 1);
-    saveCategoriesForUser(currentUser, categories);
+    // Enregistrer les catégories dans Firestore
+    saveCategoriesToFirestore();
     populateCategories();
     renderCategoryList();
   }
