@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2a7ae2" />
+  <title>Application d’inventaire</title>
+  <!-- Manifest for PWA support -->
+  <link rel="manifest" href="manifest.json" />
+  <!-- Main stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Authentication section -->
+  <div id="auth" class="container">
+    <h1 class="app-title">Application d’inventaire</h1>
+    <!-- Login form -->
+    <div id="login-section">
+      <h2>Se connecter</h2>
+      <input id="login-email" type="email" placeholder="Email" />
+      <input id="login-password" type="password" placeholder="Mot de passe" />
+      <button id="login-button" class="primary">Connexion</button>
+      <p>Pas de compte ? <a href="#" id="show-register">Créer un compte</a></p>
+    </div>
+    <!-- Registration form -->
+    <div id="register-section" style="display: none;">
+      <h2>Créer un compte</h2>
+      <input id="register-email" type="email" placeholder="Email" />
+      <input id="register-password" type="password" placeholder="Mot de passe" />
+      <button id="register-button" class="primary">Créer</button>
+      <p>Déjà inscrit ? <a href="#" id="show-login">Se connecter</a></p>
+    </div>
+  </div>
+  <!-- Application section (hidden until authenticated) -->
+  <div id="app-section" style="display: none;">
+    <header>
+      <h1 class="app-title">Gestion d’inventaire</h1>
+      <button id="logout-button" class="secondary">Déconnexion</button>
+    </header>
+    <!-- Navigation tabs for different inventories and category management -->
+    <nav id="nav-tabs" class="tabs">
+      <button id="tab-chantier" class="tab active">Inventaire chantier</button>
+      <button id="tab-atelier" class="tab">Inventaire atelier</button>
+      <button id="manage-categories-button" class="tab">Catégories</button>
+    </nav>
+
+    <section id="controls" class="controls">
+      <div class="filter-group">
+        <label for="category-select">Catégorie :</label>
+        <select id="category-select">
+          <!-- Categories will be populated dynamically -->
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="chef-select">Chef d’équipe :</label>
+        <select id="chef-select">
+          <!-- Team leaders will be populated dynamically -->
+        </select>
+      </div>
+      <div class="filter-group">
+        <input id="search-input" type="text" placeholder="Rechercher…" />
+      </div>
+      <div class="button-group">
+        <button id="export-button" class="secondary">Exporter CSV</button>
+        <button id="add-item-button" class="primary">Ajouter</button>
+      </div>
+    </section>
+    <!-- Inventory table -->
+    <table id="inventory-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Catégorie</th>
+          <th>Quantité</th>
+          <th>Date</th>
+          <th>Chantier</th>
+          <th>Chef d’équipe</th>
+          <th>Lieu</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <!-- Modal for adding/editing items -->
+    <div id="item-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h2 id="modal-title">Nouvel article</h2>
+        <input id="item-name" type="text" placeholder="Nom de l’article" />
+        <select id="item-category-select">
+          <!-- Categories options inserted here -->
+        </select>
+        <input id="item-quantity" type="number" min="0" placeholder="Quantité" />
+        <!-- New fields: date, chantier, location -->
+        <input id="item-date" type="date" />
+        <input id="item-site" type="text" placeholder="Nom du chantier" />
+        <input id="item-chef" type="text" placeholder="Chef d’équipe" />
+        <select id="item-location">
+          <option value="chantier">Chantier</option>
+          <option value="atelier">Atelier</option>
+        </select>
+        <div class="modal-buttons">
+          <button id="save-item-button" class="primary">Enregistrer</button>
+          <button id="cancel-item-button" class="secondary">Annuler</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for managing categories -->
+    <div id="category-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h2>Gestion des catégories</h2>
+        <ul id="category-list" class="category-list"></ul>
+        <div class="category-add">
+          <input id="new-category-name" type="text" placeholder="Nouvelle catégorie" />
+          <button id="add-category-button" class="primary">Ajouter</button>
+        </div>
+        <div class="modal-buttons">
+          <button id="close-category-button" class="secondary">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Main script -->
+  <script src="main.js"></script>
+</body>
+</html>
